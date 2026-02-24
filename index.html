@@ -617,11 +617,13 @@
         <th title="Survived the week">👟<br>Survive<br>+1</th>
         <th title="Won individual immunity">🏆<br>Ind. Imm<br>+3</th>
         <th title="Won tribal immunity challenge">🛡<br>Tribe Imm<br>+2</th>
-        <th title="Found or played idol/advantage">🪬<br>Idol/Adv<br>+3</th>
+        <th title="Played idol/advantage">🪬<br>Idol/Adv<br>+3</th>
         <th title="Lost their vote">🚫<br>Lost Vote<br>−1</th>
+        <th title="Voted out with an idol">🤡<br>Idol Pocket<br>−3</th>
         <th title="Voted out this week">☠<br>Voted Out<br>−5</th>
         <th title="Made final tribal council">⭐<br>Final TC<br>+5</th>
         <th title="Won Survivor">👑<br>Winner<br>+10</th>
+        <th title="Commissioner Discretion / Twists">🔮<br>Twists<br>±</th> <th>Pts</th>
         <th>Pts</th>
       </tr>
     </thead>
@@ -639,8 +641,9 @@
     <div class="rule-row"><span>Survive the week (not voted out)</span><span class="rule-pts pos">+1 pt</span></div>
     <div class="rule-row"><span>Win individual immunity challenge</span><span class="rule-pts pos">+3 pts</span></div>
     <div class="rule-row"><span>Win tribal immunity challenge</span><span class="rule-pts pos">+2 pts</span></div>
-    <div class="rule-row"><span>Find or play an idol / advantage</span><span class="rule-pts pos">+3 pts</span></div>
+    <div class="rule-row"><span>Play an idol / advantage</span><span class="rule-pts pos">+3 pts</span></div>
     <div class="rule-row"><span>Lose their vote</span><span class="rule-pts neg">−1 pt</span></div>
+    <div class="rule-row"><span>Voted out with an idol in pocket</span><span class="rule-pts neg">−3 pts</span></div>
     <div class="rule-row"><span>Voted out (including on their boot week)</span><span class="rule-pts neg">−5 pts</span></div>
     <div class="rule-row"><span>Appear at Final Tribal Council</span><span class="rule-pts pos">+5 pts</span></div>
     <div class="rule-row"><span>Win Survivor</span><span class="rule-pts pos">+10 pts</span></div>
@@ -672,7 +675,7 @@ const CASTAWAYS = [
 ];
 
 const SCORING = {
-  survive: 1, ind_imm: 3, tribe_imm: 2, idol: 3, lost_vote: -1, voted_out: -5, final_tc: 5, winner: 10
+  survive: 1, ind_imm: 3, tribe_imm: 2, idol: 3, lost_vote: -1, voted_out: -5, idol_pocket: -3, final_tc: 5, winner: 10
 };
 
 // ============================================================
@@ -813,6 +816,8 @@ function castawayTotalPoints(c) {
     if (s.voted_out) pts += SCORING.voted_out;
     if (s.final_tc) pts += SCORING.final_tc;
     if (s.winner) pts += SCORING.winner;
+    if (s.idol_pocket) pts += SCORING.idol_pocket;
+    if (s.custom_pts) pts += s.custom_pts;
   }
   return pts;
 }
@@ -1005,8 +1010,8 @@ function renderScoring() {
   renderSnuffedList();
 
   const tbody = document.getElementById('scoring-tbody');
-  const fields = ['survive','ind_imm','tribe_imm','idol','lost_vote','voted_out','final_tc','winner'];
-  const negFields = ['lost_vote','voted_out'];
+  const fields = ['survive','ind_imm','tribe_imm','idol','lost_vote', 'idol_pocket', 'voted_out', 'final_tc','winner'];
+  const negFields = ['lost_vote', 'idol_pocket', 'voted_out'];
 
   tbody.innerHTML = CASTAWAYS.map(c => {
     const eliminated = isEliminated(c);
@@ -1014,7 +1019,14 @@ function renderScoring() {
     // Skip eliminated from previous weeks (show but greyed)
     const prevElim = eliminated && !thisWeekElim;
 
-    let pts = 0;
+    // Grab both the custom points AND the custom note from your state
+    const customPts = state.weekScores[state.currentWeek]?.[c]?.custom_pts || 0;
+    const customNote = state.weekScores[state.currentWeek]?.[c]?.custom_note || "";
+    
+    // Escape double quotes so it doesn't break the HTML title attribute
+    const safeNote = customNote ? customNote.replace(/"/g, '&quot;') : '';
+    
+    let pts = customPts;
     fields.forEach(f => { if (getWeekScore(c,f)) pts += SCORING[f]; });
 
     const team = castawayTeam(c);
@@ -1029,6 +1041,7 @@ function renderScoring() {
         onclick="toggle('${c.replace(/'/g,"\\'")}','${f}')">${active ? '✓' : ''}</button></td>`;
     }).join('');
 
+    // Insert the new custom button <td> right after ${toggles} and before the Row Score
     return `<tr class="${prevElim ? 'eliminated-row' : ''}">
       <td class="left">
         ${c}
@@ -1037,6 +1050,16 @@ function renderScoring() {
       </td>
       <td>${team ? `<span class="team-badge" style="background:${color}22;border:1px solid ${color}66;color:${color};">${team.split(' ')[0]}</span>` : '<span style="color:rgba(255,255,255,0.2);font-size:0.7rem;">—</span>'}</td>
       ${toggles}
+      <td>
+        <button class="score-toggle ${customPts !== 0 ? 'active' : ''} ${customPts < 0 ? 'negative' : ''}" 
+          ${prevElim ? 'disabled style="opacity:0.2;cursor:not-allowed;"' : ''}
+          title="${safeNote || 'Click to add custom twist points'}"
+          onclick="setCustomPoints('${c.replace(/'/g,"\\'")}')" 
+          style="width: auto; padding: 0 0.5rem; border-radius: 4px;">
+          ${customPts > 0 ? '+' : ''}${customPts !== 0 ? customPts : '±'}
+        </button>
+        ${safeNote ? `<div style="font-size: 0.65rem; color: var(--gold); margin-top: 0.2rem; line-height: 1;" title="${safeNote}">💬</div>` : ''}
+      </td>
       <td><span class="row-score${pts < 0 ? ' negative' : ''}">${pts >= 0 ? '+' : ''}${pts}</span></td>
     </tr>`;
   }).join('');
@@ -1085,6 +1108,39 @@ async function clearWeek() {
   renderScoring();
 }
 
+async function setCustomPoints(castaway) {
+  // Get current custom points and notes, default to 0 and empty
+  const currentVal = state.weekScores[state.currentWeek]?.[castaway]?.custom_pts || 0;
+  const currentNote = state.weekScores[state.currentWeek]?.[castaway]?.custom_note || "";
+  
+  // Prompt the commissioner for a number
+  const input = prompt(`Enter custom twist points for ${castaway} (current: ${currentVal}):\nUse negative numbers for penalties.`, currentVal);
+  if (input === null) return; // User clicked Cancel
+  
+  const pts = parseInt(input);
+  if (isNaN(pts)) {
+    alert("Please enter a valid number.");
+    return;
+  }
+
+  // If points are assigned, ask for the reasoning
+  let note = "";
+  if (pts !== 0) {
+    note = prompt(`Why are you awarding ${pts} points to ${castaway}? (Optional)`, currentNote);
+    if (note === null) note = currentNote; // Keep the old note if they click cancel on this prompt
+  }
+
+  // Save it to the state
+  if (!state.weekScores[state.currentWeek]) state.weekScores[state.currentWeek] = {};
+  if (!state.weekScores[state.currentWeek][castaway]) state.weekScores[state.currentWeek][castaway] = {};
+  
+  state.weekScores[state.currentWeek][castaway].custom_pts = pts;
+  state.weekScores[state.currentWeek][castaway].custom_note = note;
+  
+  await save();
+  renderScoring();
+}
+
 // Expose to window for inline onclick handlers
 window.showView = showView;
 window.openAssign = openAssign;
@@ -1095,6 +1151,7 @@ window.toggle = toggle;
 window.changeWeek = changeWeek;
 window.lockWeek = lockWeek;
 window.clearWeek = clearWeek;
+window.setCustomPoints = setCustomPoints;
 
 // Boot
 init();
