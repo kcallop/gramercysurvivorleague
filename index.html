@@ -967,8 +967,7 @@ function renderSnuffedList() {
     el.innerHTML = snuffed.map(c =>
       `<span style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(192,57,43,0.25);border:1px solid rgba(192,57,43,0.5);color:#ff9080;font-size:0.78rem;padding:0.2rem 0.5rem;">
         ☠ ${c}
-        <button onclick="removeElimination('${c.replace(/'/g,"\\'")}')}" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:0.9rem;padding:0 0.1rem;" title="Undo">✕</button>
-      </span>`
+            <button onclick="removeElimination('${c.replace(/'/g,"\\'")}')" style="background:none...      </span>`
     ).join('');
   }
 }
