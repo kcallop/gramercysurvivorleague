@@ -729,26 +729,23 @@ async function initFirebase() {
 
     // Listen for real-time updates from any device
     // Note: also fires immediately on connect — handles both empty and populated DB
-    let initialLoad = true;
-    onValue(dbRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        state = data;
-      }
-      setSyncStatus('saved', '✓ Synced');
-      // Always render on first load; subsequent updates re-render the active view
-      if (initialLoad) {
-        initialLoad = false;
-        renderStandings();
-      } else {
-        const active = document.querySelector('.view.active');
-        if (active) {
-          if (active.id === 'standings') renderStandings();
-          if (active.id === 'draft') renderDraft();
-          if (active.id === 'scoring') renderScoring();
-        }
-      }
-    });
+let initialLoad = true;
+onValue(dbRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data) { state = data; }
+  setSyncStatus('saved', '✓ Synced');
+  if (initialLoad) {
+    initialLoad = false;
+    renderStandings();
+  } else {
+    const active = document.querySelector('.view.active');
+    if (active) {
+      if (active.id === 'standings') renderStandings();
+      if (active.id === 'draft') renderDraft();
+      if (active.id === 'scoring') renderScoring();
+    }
+  }
+});
 
     return true;
   } catch(e) {
