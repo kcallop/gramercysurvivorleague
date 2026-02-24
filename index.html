@@ -733,7 +733,13 @@ async function initFirebase() {
     onValue(dbRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        state = data;
+        // FIX: Force empty objects to exist if Firebase stripped them out
+        state = {
+          assignments: data.assignments || {},
+          eliminated: data.eliminated || {},
+          weekScores: data.weekScores || {},
+          currentWeek: data.currentWeek || 1
+        };
       }
       setSyncStatus('saved', '✓ Synced');
       // Always render on first load; subsequent updates re-render the active view
