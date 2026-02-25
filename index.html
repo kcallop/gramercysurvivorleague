@@ -552,6 +552,33 @@
 </head>
 <body>
 
+<script>
+  // CHANGE THIS TO WHATEVER PASSWORD YOU WANT
+  const LEAGUE_PASSWORD = "jeffingtonprobstein"; 
+  
+  // Check if they already logged in recently
+  let hasAccess = localStorage.getItem("survivor_access");
+
+  if (hasAccess !== LEAGUE_PASSWORD) {
+    // Prompt for password
+    let entered = prompt("🔒 Enter the league password to view the standings:");
+    
+    if (entered === LEAGUE_PASSWORD) {
+      // Correct password! Save it so they don't have to type it again
+      localStorage.setItem("survivor_access", LEAGUE_PASSWORD);
+    } else {
+      // Wrong password! Erase the screen.
+      document.body.innerHTML = `
+        <div style="text-align: center; margin-top: 20vh; font-family: 'Cinzel', serif;">
+          <h1 style="color: #ff3d00; font-size: 3rem;">Access Denied</h1>
+          <p style="color: #c2b89a; font-size: 1.5rem; margin-top: 1rem;">The tribe has spoken.</p>
+        </div>
+      `;
+      throw new Error("Wrong password. Stopping app execution.");
+    }
+  }
+</script>
+  
 <header>
   <div class="flame-row">
     <span class="flame">🔥</span>
