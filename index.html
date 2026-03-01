@@ -1151,18 +1151,47 @@ async function changeWeek(delta) {
 
 async function lockWeek() {
   const thisWeekOut = thisWeekEliminated();
+  
+  // 1. Auto-apply survival points first
   CASTAWAYS.forEach(c => {
     const prevElim = isEliminated(c) && eliminatedWeek(c) < state.currentWeek;
     if (!prevElim && !thisWeekOut.includes(c)) {
       if (!getWeekScore(c, 'survive')) setWeekScore(c, 'survive', true);
     }
   });
-  const elimMsg = thisWeekOut.length > 0
-    ? ` ${thisWeekOut.length} castaway${thisWeekOut.length > 1 ? 's' : ''} eliminated.`
-    : ' No eliminations recorded.';
+
+  // 2. Tally the weekly totals for each team
+  let weeklyTeamScores = {};
+  TEAMS.forEach(t => weeklyTeamScores[t] = 0);
+
+  CASTAWAYS.forEach(c => {
+    const team = castawayTeam(c);
+    if (team) {
+      // Relies on the updated castawayWeekPoints function!
+      weeklyTeamScores[team] += castawayWeekPoints(c, state.currentWeek);
+    }
+  });
+
+  // 3. Format a clean, bulleted summary
+  const sortedTeams = TEAMS.sort((a,b) => weeklyTeamScores[b] - weeklyTeamScores[a]);
+  let summaryText = `🏆 WEEK ${state.currentWeek} RESULTS 🏆\n\n`;
+
+  sortedTeams.forEach(t => {
+    const pts = weeklyTeamScores[t];
+    summaryText += `• ${t}: ${pts > 0 ? '+' : ''}${pts} pts\n`;
+  });
+
+  if (thisWeekOut.length > 0) {
+    summaryText += `\n🕯 Torches Snuffed: ${thisWeekOut.join(', ')}`;
+  } else {
+    summaryText += `\n🕯 No eliminations.`;
+  }
+
+  // 4. Show the alert, then advance the week and save
+  alert(summaryText + `\n\n✅ Moving to Week ${state.currentWeek + 1}...`);
+
   state.currentWeek++;
   await save();
-  alert(`✅ Week ${state.currentWeek - 1} locked!${elimMsg} Survival points auto-applied. Moving to Week ${state.currentWeek}.`);
   renderScoring();
 }
 
