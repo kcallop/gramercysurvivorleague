@@ -115,6 +115,15 @@
   .view { display: none; padding: 1.5rem 1rem 3rem; max-width: 1100px; margin: 0 auto; }
   .view.active { display: block; }
 
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Makes scrolling smooth on iPhones */
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+  }
+  
   /* STANDINGS */
   .standings-grid {
     display: grid;
@@ -341,8 +350,14 @@
     white-space: nowrap;
   }
 
-  .scoring-table th.left { text-align: left; }
-
+  .scoring-table th.left { 
+    text-align: left; 
+    position: sticky; 
+    left: 0; 
+    z-index: 3; 
+    background-color: #271a0c; /* Solid color to match the header tint */
+    border-right: 1px solid rgba(232,196,74,0.3);
+  }
   .scoring-table tbody tr {
     border-bottom: 1px solid rgba(255,255,255,0.05);
     transition: background 0.15s;
@@ -357,7 +372,16 @@
     color: var(--ash);
   }
 
-  .scoring-table td.left { text-align: left; color: var(--cream); font-weight: 600; }
+  .scoring-table td.left { 
+    text-align: left; 
+    color: var(--cream); 
+    font-weight: 600; 
+    position: sticky; 
+    left: 0; 
+    z-index: 2; 
+    background-color: var(--deep); /* Solid background to hide scrolling cells */
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
 
   .score-toggle {
     width: 28px;
@@ -635,7 +659,7 @@
     </div>
     <div id="snuffed-list" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
   </div>
-
+<div class="table-wrapper">
   <table class="scoring-table">
     <thead>
       <tr>
@@ -657,6 +681,7 @@
     </thead>
     <tbody id="scoring-tbody"></tbody>
   </table>
+</div>
   <div style="margin-top:1rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
     <button class="action-btn" onclick="lockWeek()">🔒 Lock Week & Save</button>
     <button class="action-btn secondary" onclick="clearWeek()">Clear Week</button>
@@ -1005,7 +1030,8 @@ function renderSnuffedList() {
     el.innerHTML = snuffed.map(c =>
       `<span style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(192,57,43,0.25);border:1px solid rgba(192,57,43,0.5);color:#ff9080;font-size:0.78rem;padding:0.2rem 0.5rem;">
         ☠ ${c}
-            <button onclick="removeElimination('${c.replace(/'/g,"\\'")}')" style="background:none...      </span>`
+        <button onclick="removeElimination('${c.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:0.9rem;padding:0 0.1rem;" title="Undo">✕</button>
+      </span>`
     ).join('');
   }
 }
