@@ -685,6 +685,7 @@
   <div style="margin-top:1rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
     <button class="action-btn" onclick="lockWeek()">🔒 Lock Week & Save</button>
     <button class="action-btn secondary" onclick="clearWeek()">Clear Week</button>
+    <button class="action-btn secondary" onclick="loginCommissioner()" style="border-color: #43b0e8; color: #43b0e8;">Commissioner Login</button>
   </div>
 </div>
 
@@ -789,27 +790,32 @@ async function initFirebase() {
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const { getDatabase, ref, set, onValue } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
     
-    // NEW IMPORTS FOR GOOGLE AUTH:
-    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    // 1. MAKE SURE THIS IMPORT IS HERE
+    const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
 
     const app = initializeApp(FIREBASE_CONFIG);
     db = getDatabase(app);
     dbRef = ref(db, 'league');
     
-    // INITIALIZE AUTH & PROVIDER:
+    // 2. MAKE SURE THIS AUTH VARIABLE IS HERE
     const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
     
-    // NEW POPUP LOGIN FUNCTION:
+    // 3. MAKE SURE THIS FUNCTION IS HERE
     window.loginCommissioner = async function() {
+      const email = prompt("Enter Admin Email:");
+      if (!email) return;
+      const password = prompt("Enter Admin Password:");
+      if (!password) return;
+
       try {
-        const result = await signInWithPopup(auth, provider);
-        alert(`Welcome, Commissioner ${result.user.displayName}! You can now edit and save scores.`);
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Admin login successful! You can now edit and save scores.");
       } catch (error) {
-        console.error("Auth error:", error);
         alert("Login failed: " + error.message);
       }
     };
+
+    // ... rest of your code ...
 
     // Listen for real-time updates from any device...
     // Note: also fires immediately on connect — handles both empty and populated DB
