@@ -575,33 +575,6 @@
 </style>
 </head>
 <body>
-
-<script>
-  // CHANGE THIS TO WHATEVER PASSWORD YOU WANT
-  const LEAGUE_PASSWORD = "jeffingtonprobstein"; 
-  
-  // Check if they already logged in recently
-  let hasAccess = localStorage.getItem("survivor_access");
-
-  if (hasAccess !== LEAGUE_PASSWORD) {
-    // Prompt for password
-    let entered = prompt("🔒 Enter the league password to view the standings:");
-    
-    if (entered === LEAGUE_PASSWORD) {
-      // Correct password! Save it so they don't have to type it again
-      localStorage.setItem("survivor_access", LEAGUE_PASSWORD);
-    } else {
-      // Wrong password! Erase the screen.
-      document.body.innerHTML = `
-        <div style="text-align: center; margin-top: 20vh; font-family: 'Cinzel', serif;">
-          <h1 style="color: #ff3d00; font-size: 3rem;">Access Denied</h1>
-          <p style="color: #c2b89a; font-size: 1.5rem; margin-top: 1rem;">The tribe has spoken.</p>
-        </div>
-      `;
-      throw new Error("Wrong password. Stopping app execution.");
-    }
-  }
-</script>
   
 <header>
   <div class="flame-row">
@@ -785,39 +758,36 @@ async function initFirebase() {
     return false;
   }
 
-    try {
+try {
     // Load Firebase SDKs dynamically
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const { getDatabase, ref, set, onValue } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
     
-    // 1. MAKE SURE THIS IMPORT IS HERE
-    const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    // 1. UPDATED: Import the Google Auth modules instead of Email/Password
+    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
 
     const app = initializeApp(FIREBASE_CONFIG);
     db = getDatabase(app);
     dbRef = ref(db, 'league');
     
-    // 2. MAKE SURE THIS AUTH VARIABLE IS HERE
+    // 2. UPDATED: Initialize Auth AND the Google Provider
     const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
     
-    // 3. MAKE SURE THIS FUNCTION IS HERE
+    // 3. UPDATED: Change the button function to trigger the Google Popup
     window.loginCommissioner = async function() {
-      const email = prompt("Enter Admin Email:");
-      if (!email) return;
-      const password = prompt("Enter Admin Password:");
-      if (!password) return;
-
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("Admin login successful! You can now edit and save scores.");
+        const result = await signInWithPopup(auth, provider);
+        alert(`Welcome, Commissioner ${result.user.displayName}! You can now edit and save scores.`);
       } catch (error) {
+        console.error("Auth error:", error);
         alert("Login failed: " + error.message);
       }
     };
 
-    // ... rest of your code ...
-
     // Listen for real-time updates from any device...
+    // (Keep your existing onValue code right below this!)
+
     // Note: also fires immediately on connect — handles both empty and populated DB
     let initialLoad = true;
     onValue(dbRef, (snapshot) => {
