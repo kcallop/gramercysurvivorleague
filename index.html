@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Survivor 50 Fantasy League</title>
+<title>Gramercy Survivor Fantasy League</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -572,6 +572,68 @@
   .sync-status.error { background: rgba(192,57,43,0.2); color: #ff6b6b; border: 1px solid rgba(192,57,43,0.4); }
 
   .fire-icon { color: var(--fire); }
+
+  /* ARCHIVE */
+  .archive-card { cursor: pointer; transition: background 0.15s, transform 0.15s; }
+  .archive-card:hover { background: rgba(232,196,74,0.08); transform: translateY(-2px); }
+  .archive-meta { font-size: 0.78rem; color: var(--ash); margin-top: 0.3rem; }
+
+  /* START NEW SEASON MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+
+  .modal-card {
+    background: var(--deep);
+    border: 1px solid rgba(232,196,74,0.3);
+    border-top: 4px solid #c0392b;
+    padding: 1.5rem;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .modal-card h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  .modal-card p { font-size: 0.82rem; color: var(--ash); line-height: 1.4; }
+
+  .modal-card label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    color: var(--ash);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0.9rem 0 0.3rem;
+  }
+
+  .modal-input, .modal-card textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(232,196,74,0.3);
+    color: var(--cream);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.7rem;
+    outline: none;
+  }
+
+  .modal-card textarea { resize: vertical; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -584,16 +646,17 @@
     <span class="flame">🔥</span>
     <span class="flame">🔥</span>
   </div>
-  <h1>SURVIVOR 50</h1>
+  <h1>SURVIVOR 51</h1>
   <div class="subtitle">Fantasy League &bull; In The Hands of Sophie Lewis</div>
   <div><span id="sync-status" class="sync-status saving">⟳ Loading…</span></div>
 </header>
 
 <nav>
-  <button class="tab-btn active" onclick="showView('standings')">Standings</button>
-  <button class="tab-btn" onclick="showView('draft')">Draft / Roster</button>
-  <button class="tab-btn" onclick="showView('scoring')">Score Week</button>
-  <button class="tab-btn" onclick="showView('rules')">Rules</button>
+  <button class="tab-btn active" onclick="showView('standings', this)">Standings</button>
+  <button class="tab-btn" onclick="showView('draft', this)">Draft / Roster</button>
+  <button class="tab-btn" onclick="showView('scoring', this)">Score Week</button>
+  <button class="tab-btn" onclick="showView('rules', this)">Rules</button>
+  <button class="tab-btn" onclick="showView('archive', this)">Archive</button>
 </nav>
 
 <div id="standings" class="view active">
@@ -603,11 +666,20 @@
 
 <div id="draft" class="view">
   <div class="section-title">Team Rosters</div>
+  <div style="margin-bottom:1.2rem;">
+    <button class="action-btn secondary" style="border-color:#c0392b;color:#ff6b6b;" onclick="openNewSeasonModal()">🏁 Start New Season</button>
+  </div>
   <div id="draft-grid" class="draft-grid"></div>
   <div class="castaway-pool">
     <div class="pool-label">Available Castaways — click to assign</div>
     <div id="pool-grid" class="pool-grid"></div>
   </div>
+</div>
+
+<div id="archive" class="view">
+  <div class="section-title">Season Archive</div>
+  <div id="archive-list" class="draft-grid"></div>
+  <div id="archive-detail"></div>
 </div>
 
 <div id="scoring" class="view">
@@ -658,7 +730,7 @@
   <div style="margin-top:1rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
     <button class="action-btn" onclick="lockWeek()">🔒 Lock Week & Save</button>
     <button class="action-btn secondary" onclick="clearWeek()">Clear Week</button>
-    <button class="action-btn secondary" onclick="loginCommissioner()" style="border-color: #43b0e8; color: #43b0e8;">Commissioner Login</button>
+    <button id="commissioner-btn" class="action-btn secondary" onclick="loginCommissioner()" style="border-color: #43b0e8; color: #43b0e8;">Commissioner Login</button>
   </div>
 </div>
 
@@ -693,6 +765,21 @@
   </div>
 </div>
 
+<div id="new-season-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>Start New Season</h3>
+    <p>This archives the current season's final standings and resets rosters, eliminations, and week-by-week scores for a fresh draft. The 4 teams stay the same — only the castaway list changes.</p>
+    <label for="new-season-label">Season Label</label>
+    <input type="text" id="new-season-label" class="modal-input" placeholder="e.g. Survivor 51">
+    <label for="new-season-castaways">New Castaways (one per line)</label>
+    <textarea id="new-season-castaways" rows="10" placeholder="Jane Doe&#10;John Smith&#10;..."></textarea>
+    <div style="display:flex; gap:0.8rem; margin-top:1.2rem; flex-wrap:wrap;">
+      <button class="action-btn" style="background:#c0392b;" onclick="startNewSeason()">Archive Current Season &amp; Start New</button>
+      <button class="action-btn secondary" onclick="closeNewSeasonModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 const TEAMS = [
   "Cruise Lesbians",
@@ -701,7 +788,9 @@ const TEAMS = [
   "Miscellaneous Boyfriends"
 ];
 
-const CASTAWAYS = [
+// Fallback roster used only if Firebase/localStorage has no `castaways` field yet
+// (i.e. the first load after season-archiving was added) — keeps the live season intact.
+const DEFAULT_CASTAWAYS = [
   "Angelina Keeley","Aubry Bracco","Coach","Charlie Davis",
   "Chrissy Hofbeck","Christian Hubicki","Cirie Fields","Colby Donaldson",
   "Dee","Emily Flippen","Genevieve Mushaluk",
@@ -731,12 +820,16 @@ let state = {
   assignments: {},
   eliminated: {},
   weekScores: {},
-  currentWeek: 1
+  currentWeek: 1,
+  castaways: DEFAULT_CASTAWAYS,
+  seasonLabel: 'Survivor 50',
+  archive: {}
 };
 
 let db = null;
 let dbRef = null;
 let saveTimeout = null;
+let currentUser = null;
 
 function setSyncStatus(status, msg) {
   const el = document.getElementById('sync-status');
@@ -749,12 +842,51 @@ function isConfigured() {
   return !FIREBASE_CONFIG.apiKey.includes('PASTE_YOUR');
 }
 
+function updateAuthUI() {
+  const btn = document.getElementById('commissioner-btn');
+  if (!btn) return;
+  if (currentUser) {
+    btn.textContent = `Sign Out (${currentUser.displayName || 'Commissioner'})`;
+    btn.onclick = () => window.logoutCommissioner();
+  } else {
+    btn.textContent = 'Commissioner Login';
+    btn.onclick = () => window.loginCommissioner();
+  }
+}
+
+// Editing is only restricted once Firebase auth is actually wired up.
+// In local-only (unconfigured) mode there's no login concept, so allow edits.
+function requireAuth() {
+  if (!isConfigured()) return true;
+  if (!currentUser) {
+    alert('Please log in as Commissioner to make changes.');
+    return false;
+  }
+  return true;
+}
+
 async function initFirebase() {
   if (!isConfigured()) {
     setSyncStatus('error', '⚠ Firebase not configured — data saves locally only');
     // Fall back to localStorage so the app still works untouched
     const saved = localStorage.getItem('s50fantasy');
-    if (saved) { try { state = JSON.parse(saved); } catch(e) {} }
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        state = {
+          assignments: parsed.assignments || {},
+          eliminated: parsed.eliminated || {},
+          weekScores: parsed.weekScores || {},
+          currentWeek: parsed.currentWeek || 1,
+          castaways: parsed.castaways || DEFAULT_CASTAWAYS,
+          seasonLabel: parsed.seasonLabel || 'Survivor 50',
+          archive: parsed.archive || {}
+        };
+      } catch(e) {}
+    }
+    window.loginCommissioner = function() {
+      alert('Firebase is not configured, so this app is running in local-only mode — there is no commissioner login.');
+    };
     return false;
   }
 
@@ -764,16 +896,21 @@ try {
     const { getDatabase, ref, set, onValue } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
     
     // 1. UPDATED: Import the Google Auth modules instead of Email/Password
-    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const { getAuth, signInWithPopup, signOut, GoogleAuthProvider, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
 
     const app = initializeApp(FIREBASE_CONFIG);
     db = getDatabase(app);
     dbRef = ref(db, 'league');
-    
+
     // 2. UPDATED: Initialize Auth AND the Google Provider
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
-    
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      updateAuthUI();
+    });
+
     // 3. UPDATED: Change the button function to trigger the Google Popup
     window.loginCommissioner = async function() {
       try {
@@ -782,6 +919,14 @@ try {
       } catch (error) {
         console.error("Auth error:", error);
         alert("Login failed: " + error.message);
+      }
+    };
+
+    window.logoutCommissioner = async function() {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Logout error:", error);
       }
     };
 
@@ -798,7 +943,10 @@ try {
           assignments: data.assignments || {},
           eliminated: data.eliminated || {},
           weekScores: data.weekScores || {},
-          currentWeek: data.currentWeek || 1
+          currentWeek: data.currentWeek || 1,
+          castaways: data.castaways || DEFAULT_CASTAWAYS,
+          seasonLabel: data.seasonLabel || 'Survivor 50',
+          archive: data.archive || {}
         };
       }
       setSyncStatus('saved', '✓ Synced');
@@ -856,13 +1004,15 @@ async function init() {
   // and calls renderStandings() itself (even if the database is empty)
 }
 
-function castawayTeam(c) { return state.assignments[c] || null; }
-function isEliminated(c) { return state.eliminated[c] !== undefined; }
-function eliminatedWeek(c) { return state.eliminated[c]; }
+// Each takes an optional `src` (a state-shaped object: {castaways, assignments, eliminated, weekScores})
+// so the same scoring logic can drive both the live season and a read-only archived season.
+function castawayTeam(c, src = state) { return src.assignments[c] || null; }
+function isEliminated(c, src = state) { return src.eliminated[c] !== undefined; }
+function eliminatedWeek(c, src = state) { return src.eliminated[c]; }
 
-function castawayTotalPoints(c) {
+function castawayTotalPoints(c, src = state) {
   let pts = 0;
-  for (const [wk, scores] of Object.entries(state.weekScores)) {
+  for (const [wk, scores] of Object.entries(src.weekScores)) {
     const s = scores[c];
     if (!s) continue;
     if (s.survive) pts += SCORING.survive;
@@ -881,9 +1031,9 @@ function castawayTotalPoints(c) {
   return pts;
 }
 
-function teamTotalPoints(team) {
-  return CASTAWAYS.filter(c => castawayTeam(c) === team)
-    .reduce((sum, c) => sum + castawayTotalPoints(c), 0);
+function teamTotalPoints(team, src = state) {
+  return src.castaways.filter(c => castawayTeam(c, src) === team)
+    .reduce((sum, c) => sum + castawayTotalPoints(c, src), 0);
 }
 
 function getWeekScore(castaway, field) {
@@ -929,29 +1079,30 @@ function teamBadge(team) {
 }
 
 // Views
-function showView(id) {
+function showView(id, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (id === 'standings') renderStandings();
   if (id === 'draft') renderDraft();
   if (id === 'scoring') renderScoring();
+  if (id === 'archive') renderArchive();
 }
 
 // STANDINGS
-function renderStandings() {
-  const grid = document.getElementById('standings-grid');
-  const sorted = [...TEAMS].sort((a, b) => teamTotalPoints(b) - teamTotalPoints(a));
-  grid.innerHTML = sorted.map((team, i) => {
-    const pts = teamTotalPoints(team);
-    const members = CASTAWAYS.filter(c => castawayTeam(c) === team);
-    const unassigned = members.length === 0;
+// Builds the team-card grid HTML for a given data source — shared by the live
+// Standings view and the read-only Archive season view.
+function buildStandingsHTML(src) {
+  const sorted = [...TEAMS].sort((a, b) => teamTotalPoints(b, src) - teamTotalPoints(a, src));
+  return sorted.map((team, i) => {
+    const pts = teamTotalPoints(team, src);
+    const members = src.castaways.filter(c => castawayTeam(c, src) === team);
     const color = TEAM_COLORS[team] || '#aaa';
     const rows = members.length > 0
-      ? members.sort((a,b) => castawayTotalPoints(b)-castawayTotalPoints(a)).map(c => {
-          const p = castawayTotalPoints(c);
-          return `<div class="castaway-mini-row${isEliminated(c) ? ' eliminated' : ''}">
+      ? members.sort((a,b) => castawayTotalPoints(b, src) - castawayTotalPoints(a, src)).map(c => {
+          const p = castawayTotalPoints(c, src);
+          return `<div class="castaway-mini-row${isEliminated(c, src) ? ' eliminated' : ''}">
             <span>${c.split(' ').slice(0,2).join(' ')}</span>
             <span class="pts${p < 0 ? ' negative' : ''}">${p > 0 ? '+' : ''}${p}</span>
           </div>`;
@@ -966,11 +1117,15 @@ function renderStandings() {
   }).join('');
 }
 
+function renderStandings() {
+  document.getElementById('standings-grid').innerHTML = buildStandingsHTML(state);
+}
+
 // DRAFT
 function renderDraft() {
   const grid = document.getElementById('draft-grid');
   grid.innerHTML = TEAMS.map(team => {
-    const members = CASTAWAYS.filter(c => castawayTeam(c) === team);
+    const members = state.castaways.filter(c => castawayTeam(c) === team);
     const color = TEAM_COLORS[team] || '#aaa';
     const slots = Array.from({length:6}, (_, i) => {
       const c = members[i];
@@ -988,7 +1143,7 @@ function renderDraft() {
 
   // Pool
   const pool = document.getElementById('pool-grid');
-  pool.innerHTML = CASTAWAYS.map(c => {
+  pool.innerHTML = state.castaways.map(c => {
     const assigned = castawayTeam(c);
     const elim = isEliminated(c);
     return `<div class="pool-chip${assigned ? ' drafted' : ''}" onclick="openAssign('${c.replace(/'/g,"\\'")}')">
@@ -999,13 +1154,14 @@ function renderDraft() {
 }
 
 async function openAssign(castaway) {
+  if (!requireAuth()) return;
   if (castawayTeam(castaway)) return;
   const team = prompt(`Assign "${castaway}" to which team?\n\n${TEAMS.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nEnter number (1-4):`);
   if (!team) return;
-  const idx = parseInt(team) - 1;
-  if (idx < 0 || idx >= TEAMS.length) return;
+  const idx = parseInt(team, 10) - 1;
+  if (!Number.isInteger(idx) || idx < 0 || idx >= TEAMS.length) return;
   const chosen = TEAMS[idx];
-  const currentCount = CASTAWAYS.filter(c => castawayTeam(c) === chosen).length;
+  const currentCount = state.castaways.filter(c => castawayTeam(c) === chosen).length;
   if (currentCount >= 6) { alert(`${chosen} already has 6 castaways!`); return; }
   state.assignments[castaway] = chosen;
   await save();
@@ -1013,6 +1169,7 @@ async function openAssign(castaway) {
 }
 
 async function unassign(castaway) {
+  if (!requireAuth()) return;
   if (!confirm(`Remove ${castaway} from their team?`)) return;
   delete state.assignments[castaway];
   await save();
@@ -1040,6 +1197,7 @@ function renderSnuffedList() {
 }
 
 async function addElimination() {
+  if (!requireAuth()) return;
   const sel = document.getElementById('elim-select');
   const c = sel.value;
   if (!c) return;
@@ -1052,6 +1210,7 @@ async function addElimination() {
 }
 
 async function removeElimination(c) {
+  if (!requireAuth()) return;
   delete state.eliminated[c];
   setWeekScore(c, 'voted_out', false);
   await save();
@@ -1064,7 +1223,7 @@ function renderScoring() {
   // Populate elim select — only show currently active castaways not yet snuffed this week
   const alreadyOut = thisWeekEliminated();
   const sel = document.getElementById('elim-select');
-  const available = CASTAWAYS.filter(c => !isEliminated(c) || alreadyOut.includes(c));
+  const available = state.castaways.filter(c => !isEliminated(c) || alreadyOut.includes(c));
   const eligible = available.filter(c => !alreadyOut.includes(c));
   sel.innerHTML = '<option value="">— Select castaway —</option>' +
     eligible.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1075,7 +1234,7 @@ function renderScoring() {
   const fields = ['survive', 'reward', 'ind_imm', 'tribe_imm', 'find', 'idol','lost_vote', 'idol_pocket', 'voted_out', 'final_tc','winner'];
   const negFields = ['lost_vote', 'idol_pocket', 'voted_out'];
 
-  tbody.innerHTML = CASTAWAYS.map(c => {
+  tbody.innerHTML = state.castaways.map(c => {
     const eliminated = isEliminated(c);
     const thisWeekElim = eliminatedWeek(c) === state.currentWeek;
     // Skip eliminated from previous weeks (show but greyed)
@@ -1128,6 +1287,7 @@ function renderScoring() {
 }
 
 async function toggle(castaway, field) {
+  if (!requireAuth()) return;
   const cur = getWeekScore(castaway, field);
   setWeekScore(castaway, field, !cur);
   await save();
@@ -1144,10 +1304,11 @@ async function changeWeek(delta) {
 }
 
 async function lockWeek() {
+  if (!requireAuth()) return;
   const thisWeekOut = thisWeekEliminated();
   
   // 1. Auto-apply survival points first
-  CASTAWAYS.forEach(c => {
+  state.castaways.forEach(c => {
     const prevElim = isEliminated(c) && eliminatedWeek(c) < state.currentWeek;
     if (!prevElim && !thisWeekOut.includes(c)) {
       if (!getWeekScore(c, 'survive')) setWeekScore(c, 'survive', true);
@@ -1158,7 +1319,7 @@ async function lockWeek() {
   let weeklyTeamScores = {};
   TEAMS.forEach(t => weeklyTeamScores[t] = 0);
 
-  CASTAWAYS.forEach(c => {
+  state.castaways.forEach(c => {
     const team = castawayTeam(c);
     if (team) {
       // Relies on the updated castawayWeekPoints function!
@@ -1167,7 +1328,7 @@ async function lockWeek() {
   });
 
   // 3. Format a clean, bulleted summary
-  const sortedTeams = TEAMS.sort((a,b) => weeklyTeamScores[b] - weeklyTeamScores[a]);
+  const sortedTeams = [...TEAMS].sort((a,b) => weeklyTeamScores[b] - weeklyTeamScores[a]);
   let summaryText = `🏆 WEEK ${state.currentWeek} RESULTS 🏆\n\n`;
 
   sortedTeams.forEach(t => {
@@ -1190,6 +1351,7 @@ async function lockWeek() {
 }
 
 async function clearWeek() {
+  if (!requireAuth()) return;
   if (!confirm('Clear all scores for this week?')) return;
   delete state.weekScores[state.currentWeek];
   for (const [c, wk] of Object.entries(state.eliminated)) {
@@ -1199,7 +1361,86 @@ async function clearWeek() {
   renderScoring();
 }
 
+// ARCHIVE
+function renderArchive() {
+  const list = document.getElementById('archive-list');
+  const entries = Object.entries(state.archive || {}).sort((a, b) => b[1].archivedAt - a[1].archivedAt);
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:0.8rem;font-style:italic;">No archived seasons yet — use "Start New Season" on the Draft/Roster tab to archive the current one.</div>';
+  } else {
+    list.innerHTML = entries.map(([id, season]) => {
+      const date = new Date(season.archivedAt).toLocaleDateString();
+      return `<div class="draft-team archive-card" onclick="viewArchivedSeason('${id}')">
+        <div class="draft-team-header">${season.label}</div>
+        <div class="archive-meta">Archived ${date} · Through Week ${season.finalWeek} · ${season.castaways.length} castaways</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('archive-detail').innerHTML = '';
+}
+
+function viewArchivedSeason(id) {
+  const season = state.archive[id];
+  if (!season) return;
+  document.getElementById('archive-detail').innerHTML = `
+    <div class="section-title">${season.label} — Final Standings</div>
+    <div class="standings-grid">${buildStandingsHTML(season)}</div>
+  `;
+}
+
+// START NEW SEASON
+function openNewSeasonModal() {
+  if (!requireAuth()) return;
+  document.getElementById('new-season-label').value = '';
+  document.getElementById('new-season-castaways').value = '';
+  document.getElementById('new-season-modal').style.display = 'flex';
+}
+
+function closeNewSeasonModal() {
+  document.getElementById('new-season-modal').style.display = 'none';
+}
+
+async function startNewSeason() {
+  if (!requireAuth()) return;
+
+  const label = document.getElementById('new-season-label').value.trim() || 'New Season';
+  const rawNames = document.getElementById('new-season-castaways').value;
+  const names = [...new Set(rawNames.split('\n').map(n => n.trim()).filter(Boolean))];
+
+  if (names.length === 0) {
+    alert('Enter at least one castaway name, one per line.');
+    return;
+  }
+
+  const warning = `This will archive "${state.seasonLabel}" (${state.castaways.length} castaways, through Week ${state.currentWeek}) and reset all rosters, eliminations, and scores to start "${label}" with ${names.length} castaways.\n\nThis cannot be undone from the app. Continue?`;
+  if (!confirm(warning)) return;
+
+  const archiveId = 's_' + Date.now();
+  state.archive[archiveId] = {
+    label: state.seasonLabel,
+    archivedAt: Date.now(),
+    castaways: state.castaways,
+    assignments: state.assignments,
+    eliminated: state.eliminated,
+    weekScores: state.weekScores,
+    finalWeek: state.currentWeek
+  };
+
+  state.castaways = names;
+  state.assignments = {};
+  state.eliminated = {};
+  state.weekScores = {};
+  state.currentWeek = 1;
+  state.seasonLabel = label;
+
+  await save();
+  closeNewSeasonModal();
+  renderDraft();
+  renderStandings();
+}
+
 async function setCustomPoints(castaway) {
+  if (!requireAuth()) return;
   // Get current custom points and notes, default to 0 and empty
   const currentVal = state.weekScores[state.currentWeek]?.[castaway]?.custom_pts || 0;
   const currentNote = state.weekScores[state.currentWeek]?.[castaway]?.custom_note || "";
@@ -1243,6 +1484,10 @@ window.changeWeek = changeWeek;
 window.lockWeek = lockWeek;
 window.clearWeek = clearWeek;
 window.setCustomPoints = setCustomPoints;
+window.viewArchivedSeason = viewArchivedSeason;
+window.openNewSeasonModal = openNewSeasonModal;
+window.closeNewSeasonModal = closeNewSeasonModal;
+window.startNewSeason = startNewSeason;
 
 // Boot
 init();
