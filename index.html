@@ -634,6 +634,10 @@
   }
 
   .modal-card textarea { resize: vertical; line-height: 1.5; }
+
+  .tribe-row { background: rgba(67,176,232,0.08); border-color: rgba(67,176,232,0.3); }
+  .tribe-row label { color: #43b0e8; }
+  .tribe-chip { display: inline-flex; align-items: center; gap: 0.4rem; }
 </style>
 </head>
 <body>
@@ -691,6 +695,17 @@
     </div>
   </div>
 
+  <div class="snuff-row tribe-row" style="flex-direction:column; align-items:flex-start; gap:0.6rem;">
+    <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; width:100%;">
+      <label>🏕 Tribes:</label>
+      <small style="color:var(--ash); font-size:0.7rem;">(reassign anytime — swaps, merges, etc.)</small>
+    </div>
+    <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+      <div id="tribe-chip-list" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+      <button class="action-btn secondary" style="padding:0.35rem 0.9rem; font-size:0.75rem; border-color:#43b0e8; color:#43b0e8;" onclick="addTribe()">+ Add Tribe</button>
+    </div>
+  </div>
+
   <div class="snuff-row" style="flex-direction:column; align-items:flex-start; gap:0.6rem;">
     <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; width:100%;">
       <label>🕯 Torches Snuffed This Week:</label>
@@ -707,22 +722,7 @@
 <div class="table-wrapper">
   <table class="scoring-table">
     <thead>
-      <tr>
-        <th class="left">Castaway</th>
-        <th>Team</th>
-        <th title="Survived the week">👟<br>Survive<br>+1</th>
-        <th title="Won Reward">🐓<br>Reward<br>+1</th>
-        <th title="Won individual immunity">🏆<br>Ind. Imm<br>+3</th>
-        <th title="Won tribal immunity challenge">🛡<br>Tribe Imm<br>+2</th>
-        <th title="Found idol/advantage">🔎<br>Find Idol/Adv<br>+1</th>
-        <th title="Played idol/advantage">🪬<br>Play Idol/Adv<br>+3</th>
-        <th title="Lost their vote">🚫<br>Lost Vote<br>−1</th>
-        <th title="Voted out with an idol">🤡<br>Idol Pocket<br>−3</th>
-        <th title="Voted out this week">☠<br>Voted Out<br>−5</th>
-        <th title="Made final tribal council">⭐<br>Final TC<br>+5</th>
-        <th title="Won Survivor">👑<br>Winner<br>+10</th>
-        <th title="Commissioner Discretion / Twists">🔮<br>Twists<br>±</th> <th>Pts</th>
-      </tr>
+      <tr id="scoring-thead-row"></tr>
     </thead>
     <tbody id="scoring-tbody"></tbody>
   </table>
@@ -737,31 +737,11 @@
 <div id="rules" class="view">
   <div class="rules-card">
     <h3>Scoring Rules</h3>
-    <div class="rule-row"><span>Survive the week (not voted out)</span><span class="rule-pts pos">+1 pt</span></div>
-    <div class="rule-row"><span>Win Reward</span><span class="rule-pts pos">+1 pt</span></div>
-    <div class="rule-row"><span>Win individual immunity challenge</span><span class="rule-pts pos">+3 pts</span></div>
-    <div class="rule-row"><span>Win tribal immunity challenge</span><span class="rule-pts pos">+2 pts</span></div>
-    <div class="rule-row"><span>Find an idol / advantage</span><span class="rule-pts pos">+1 pts</span></div>
-    <div class="rule-row"><span>Play an idol / advantage</span><span class="rule-pts pos">+3 pts</span></div>
-    <div class="rule-row"><span>Lose their vote</span><span class="rule-pts neg">−1 pt</span></div>
-    <div class="rule-row"><span>Voted out with an idol in pocket</span><span class="rule-pts neg">−3 pts</span></div>
-    <div class="rule-row"><span>Voted out (including on their boot week)</span><span class="rule-pts neg">−5 pts</span></div>
-    <div class="rule-row"><span>Appear at Final Tribal Council</span><span class="rule-pts pos">+5 pts</span></div>
-    <div class="rule-row"><span>Win Survivor</span><span class="rule-pts pos">+10 pts</span></div>
-    <div class="rule-row"><span>Twists (Billie Eilish etc.)</span><span class="rule-pts pos">???</span></div>
-  </div>
-  <div class="rules-card">
-    <h3>Miscellaneous Rules</h3>
-    <div class="rule-row"><span>Go To Exile Island</span><span class="rule-pts pos">+1 pt</span></div>
-    <div class="rule-row"><span>Speak Directly to Mr. Beast</span><span class="rule-pts neg">−10 pts</span></div>
-    <div class="rule-row"><span>Successfully Play Shot In The Dark </span><span class="rule-pts pos">+3 pt</span></div>
-    <div class="rule-row"><span>Win Firemaking</span><span class="rule-pts pos">+2 pt</span></div>
-  </div>
-  <div class="rules-card">
-    <h3>League Format</h3>
-    <div class="rule-row"><span>Teams</span><span style="color:var(--cream)">4 teams, 6 castaways each</span></div>
-    <div class="rule-row"><span>Season</span><span style="color:var(--cream)">Survivor Season 50</span></div>
-    <div class="rule-row"><span>Scoring</span><span style="color:var(--cream)">Cumulative across all episodes</span></div>
+    <div id="scoring-rules-list"></div>
+    <div class="rule-row" style="border-bottom:none;"><span>Twists (one-off custom points — use the ± button per castaway on the Score Week tab)</span><span class="rule-pts pos">Custom</span></div>
+    <div style="margin-top:1rem;">
+      <button class="action-btn secondary" onclick="addScoringRule()">+ Add Scoring Rule</button>
+    </div>
   </div>
 </div>
 
@@ -800,9 +780,29 @@ const DEFAULT_CASTAWAYS = [
   "Tiffany Ervin"
 ];
 
-const SCORING = {
-  survive: 1, reward: 1, ind_imm: 3, tribe_imm: 2, find: 1, idol: 3, lost_vote: -1, voted_out: -5, idol_pocket: -3, final_tc: 5, winner: 10
-};
+// Fallback scoring rules used only if Firebase/localStorage has no `scoringRules` field yet
+// (i.e. the first load after editable scoring rules was added) — matches the point values
+// this app has always used, so nothing changes visually until the commissioner edits something.
+// `survive` and `voted_out` are load-bearing for the elimination flow (see addElimination/
+// removeElimination/lockWeek) and can't be deleted from the UI, though their points/label/emoji can change.
+const DEFAULT_SCORING_RULES = [
+  { key: 'survive',     emoji: '👟', label: 'Survive',       points: 1 },
+  { key: 'reward',      emoji: '🐓', label: 'Reward',        points: 1 },
+  { key: 'ind_imm',     emoji: '🏆', label: 'Ind. Imm',      points: 3 },
+  { key: 'tribe_imm',   emoji: '🛡', label: 'Tribe Imm',     points: 2 },
+  { key: 'find',        emoji: '🔎', label: 'Find Idol/Adv', points: 1 },
+  { key: 'idol',        emoji: '🪬', label: 'Play Idol/Adv', points: 3 },
+  { key: 'lost_vote',   emoji: '🚫', label: 'Lost Vote',     points: -1 },
+  { key: 'idol_pocket', emoji: '🤡', label: 'Idol Pocket',   points: -3 },
+  { key: 'voted_out',   emoji: '☠',  label: 'Voted Out',     points: -5 },
+  { key: 'final_tc',    emoji: '⭐', label: 'Final TC',      points: 5 },
+  { key: 'winner',      emoji: '👑', label: 'Winner',        points: 10 }
+];
+
+const PROTECTED_RULE_KEYS = ['survive', 'voted_out'];
+
+// Colors for tribe badges, cycled by each tribe's position in state.tribes.
+const TRIBE_PALETTE = ['#43b0e8','#e84393','#43e8a0','#e8a043','#9b59b6','#1abc9c','#e67e22','#e74c3c'];
 
 // ============================================================
 //  FIREBASE CONFIG — paste your values here after setup
@@ -823,7 +823,11 @@ let state = {
   currentWeek: 1,
   castaways: DEFAULT_CASTAWAYS,
   seasonLabel: 'Survivor 50',
-  archive: {}
+  archive: {},
+  scoringRules: DEFAULT_SCORING_RULES,
+  tribes: [],
+  tribeAssignments: {},
+  assignedWeek: {}
 };
 
 let db = null;
@@ -880,7 +884,11 @@ async function initFirebase() {
           currentWeek: parsed.currentWeek || 1,
           castaways: parsed.castaways || DEFAULT_CASTAWAYS,
           seasonLabel: parsed.seasonLabel || 'Survivor 50',
-          archive: parsed.archive || {}
+          archive: parsed.archive || {},
+          scoringRules: parsed.scoringRules || DEFAULT_SCORING_RULES,
+          tribes: parsed.tribes || [],
+          tribeAssignments: parsed.tribeAssignments || {},
+          assignedWeek: parsed.assignedWeek || {}
         };
       } catch(e) {}
     }
@@ -946,7 +954,11 @@ try {
           currentWeek: data.currentWeek || 1,
           castaways: data.castaways || DEFAULT_CASTAWAYS,
           seasonLabel: data.seasonLabel || 'Survivor 50',
-          archive: data.archive || {}
+          archive: data.archive || {},
+          scoringRules: data.scoringRules || DEFAULT_SCORING_RULES,
+          tribes: data.tribes || [],
+          tribeAssignments: data.tribeAssignments || {},
+          assignedWeek: data.assignedWeek || {}
         };
       }
       setSyncStatus('saved', '✓ Synced');
@@ -960,6 +972,8 @@ try {
           if (active.id === 'standings') renderStandings();
           if (active.id === 'draft') renderDraft();
           if (active.id === 'scoring') renderScoring();
+          if (active.id === 'archive') renderArchive();
+          if (active.id === 'rules') renderRules();
         }
       }
     });
@@ -1010,22 +1024,21 @@ function castawayTeam(c, src = state) { return src.assignments[c] || null; }
 function isEliminated(c, src = state) { return src.eliminated[c] !== undefined; }
 function eliminatedWeek(c, src = state) { return src.eliminated[c]; }
 
+// Scoring rules are global (shared across seasons, see startNewSeason), so they always come
+// from the live `state` even when `src` is an archived season — only the week-by-week toggle
+// data (`src.weekScores`) differs between the live season and a read-only archived one.
 function castawayTotalPoints(c, src = state) {
+  // Only count weeks from when the castaway actually joined their current team — a castaway
+  // drafted after Week 1 has already been scored shouldn't hand their new team retroactive
+  // credit for points earned while undrafted. Missing/undefined defaults to week 1 (i.e. counts
+  // everything) so castaways drafted before this existed keep behaving exactly as before.
+  const sinceWeek = src.assignedWeek?.[c] ?? 1;
   let pts = 0;
   for (const [wk, scores] of Object.entries(src.weekScores)) {
+    if (Number(wk) < sinceWeek) continue;
     const s = scores[c];
     if (!s) continue;
-    if (s.survive) pts += SCORING.survive;
-    if (s.reward) pts += SCORING.reward;
-    if (s.ind_imm) pts += SCORING.ind_imm;
-    if (s.tribe_imm) pts += SCORING.tribe_imm;
-    if (s.find) pts += SCORING.find;
-    if (s.idol) pts += SCORING.idol;
-    if (s.lost_vote) pts += SCORING.lost_vote;
-    if (s.voted_out) pts += SCORING.voted_out;
-    if (s.final_tc) pts += SCORING.final_tc;
-    if (s.winner) pts += SCORING.winner;
-    if (s.idol_pocket) pts += SCORING.idol_pocket;
+    state.scoringRules.forEach(rule => { if (s[rule.key]) pts += rule.points; });
     if (s.custom_pts) pts += s.custom_pts;
   }
   return pts;
@@ -1049,18 +1062,22 @@ function setWeekScore(castaway, field, val) {
 function castawayWeekPoints(c, wk) {
   const s = state.weekScores[wk]?.[c];
   if (!s) return 0;
-  
+
   let pts = 0;
-  
-  // Dynamically check every category in your SCORING dictionary
-  for (const [category, pointValue] of Object.entries(SCORING)) {
-    if (s[category]) pts += pointValue;
-  }
-  
+  state.scoringRules.forEach(rule => { if (s[rule.key]) pts += rule.points; });
+
   // Include commissioner custom points if they exist for this week
   if (s.custom_pts) pts += s.custom_pts;
-  
+
   return pts;
+}
+
+function tribeOf(c, src = state) { return src.tribeAssignments?.[c] || null; }
+
+function tribeColorFor(tribeName) {
+  if (!tribeName) return '#666';
+  const idx = state.tribes.indexOf(tribeName);
+  return TRIBE_PALETTE[idx >= 0 ? idx % TRIBE_PALETTE.length : 0];
 }
 
 // TEAM COLORS for badges
@@ -1088,6 +1105,7 @@ function showView(id, btn) {
   if (id === 'draft') renderDraft();
   if (id === 'scoring') renderScoring();
   if (id === 'archive') renderArchive();
+  if (id === 'rules') renderRules();
 }
 
 // STANDINGS
@@ -1164,6 +1182,9 @@ async function openAssign(castaway) {
   const currentCount = state.castaways.filter(c => castawayTeam(c) === chosen).length;
   if (currentCount >= 6) { alert(`${chosen} already has 6 castaways!`); return; }
   state.assignments[castaway] = chosen;
+  // Points only count for a team from the week the castaway actually joined it —
+  // matters when a castaway is drafted after Week 1 has already been scored.
+  state.assignedWeek[castaway] = state.currentWeek;
   await save();
   renderDraft();
 }
@@ -1172,6 +1193,7 @@ async function unassign(castaway) {
   if (!requireAuth()) return;
   if (!confirm(`Remove ${castaway} from their team?`)) return;
   delete state.assignments[castaway];
+  delete state.assignedWeek[castaway];
   await save();
   renderDraft();
 }
@@ -1217,6 +1239,81 @@ async function removeElimination(c) {
   renderScoring();
 }
 
+// TRIBES
+function renderTribeChips() {
+  const el = document.getElementById('tribe-chip-list');
+  if (!el) return;
+  if (!state.tribes || state.tribes.length === 0) {
+    el.innerHTML = '<span style="color:rgba(255,255,255,0.25);font-size:0.75rem;font-style:italic;">No tribes yet</span>';
+    return;
+  }
+  el.innerHTML = state.tribes.map((t, i) => {
+    const color = TRIBE_PALETTE[i % TRIBE_PALETTE.length];
+    return `<span class="pool-chip tribe-chip" style="border-color:${color}66;color:${color};" onclick="renameTribe('${t.replace(/'/g,"\\'")}')" title="Click to rename">
+      ${t}
+      <button onclick="event.stopPropagation(); deleteTribe('${t.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:0.9rem;padding:0;line-height:1;" title="Delete tribe">✕</button>
+    </span>`;
+  }).join('');
+}
+
+async function addTribe() {
+  if (!requireAuth()) return;
+  const name = prompt('New tribe name:');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (state.tribes.includes(trimmed)) { alert('That tribe already exists.'); return; }
+  state.tribes.push(trimmed);
+  await save();
+  renderScoring();
+}
+
+async function renameTribe(oldName) {
+  if (!requireAuth()) return;
+  const name = prompt(`Rename tribe "${oldName}" to:`, oldName);
+  if (!name || !name.trim() || name.trim() === oldName) return;
+  const trimmed = name.trim();
+  if (state.tribes.includes(trimmed)) { alert('That tribe already exists.'); return; }
+  state.tribes = state.tribes.map(t => t === oldName ? trimmed : t);
+  for (const c of Object.keys(state.tribeAssignments)) {
+    if (state.tribeAssignments[c] === oldName) state.tribeAssignments[c] = trimmed;
+  }
+  await save();
+  renderScoring();
+}
+
+async function deleteTribe(name) {
+  if (!requireAuth()) return;
+  if (!confirm(`Delete tribe "${name}"? Castaways on this tribe will become unassigned.`)) return;
+  state.tribes = state.tribes.filter(t => t !== name);
+  for (const c of Object.keys(state.tribeAssignments)) {
+    if (state.tribeAssignments[c] === name) delete state.tribeAssignments[c];
+  }
+  await save();
+  renderScoring();
+}
+
+async function assignTribe(castaway) {
+  if (!requireAuth()) return;
+  if (!state.tribes || state.tribes.length === 0) {
+    alert('Add at least one tribe first (use "+ Add Tribe").');
+    return;
+  }
+  const input = prompt(`Assign "${castaway}" to which tribe?\n\n${state.tribes.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nEnter number (leave blank to clear):`);
+  if (input === null) return;
+  const trimmedInput = input.trim();
+  if (trimmedInput === '') {
+    delete state.tribeAssignments[castaway];
+    await save();
+    renderScoring();
+    return;
+  }
+  const idx = parseInt(trimmedInput, 10) - 1;
+  if (!Number.isInteger(idx) || idx < 0 || idx >= state.tribes.length) return;
+  state.tribeAssignments[castaway] = state.tribes[idx];
+  await save();
+  renderScoring();
+}
+
 function renderScoring() {
   document.getElementById('week-label').textContent = `Week ${state.currentWeek}`;
 
@@ -1229,10 +1326,18 @@ function renderScoring() {
     eligible.map(c => `<option value="${c}">${c}</option>`).join('');
 
   renderSnuffedList();
+  renderTribeChips();
+
+  document.getElementById('scoring-thead-row').innerHTML = `
+    <th class="left">Castaway</th>
+    <th>Team</th>
+    <th>Tribe</th>
+    ${state.scoringRules.map(rule => `<th title="${rule.label} (${rule.points > 0 ? '+' : ''}${rule.points})">${rule.emoji || ''}<br>${rule.label}<br>${rule.points > 0 ? '+' : ''}${rule.points}</th>`).join('')}
+    <th title="Commissioner Discretion / Twists">🔮<br>Twists<br>±</th>
+    <th>Pts</th>
+  `;
 
   const tbody = document.getElementById('scoring-tbody');
-  const fields = ['survive', 'reward', 'ind_imm', 'tribe_imm', 'find', 'idol','lost_vote', 'idol_pocket', 'voted_out', 'final_tc','winner'];
-  const negFields = ['lost_vote', 'idol_pocket', 'voted_out'];
 
   tbody.innerHTML = state.castaways.map(c => {
     const eliminated = isEliminated(c);
@@ -1243,23 +1348,26 @@ function renderScoring() {
     // Grab both the custom points AND the custom note from your state
     const customPts = state.weekScores[state.currentWeek]?.[c]?.custom_pts || 0;
     const customNote = state.weekScores[state.currentWeek]?.[c]?.custom_note || "";
-    
+
     // Escape double quotes so it doesn't break the HTML title attribute
     const safeNote = customNote ? customNote.replace(/"/g, '&quot;') : '';
-    
+
     let pts = customPts;
-    fields.forEach(f => { if (getWeekScore(c,f)) pts += SCORING[f]; });
+    state.scoringRules.forEach(rule => { if (getWeekScore(c, rule.key)) pts += rule.points; });
 
     const team = castawayTeam(c);
     const color = team ? (TEAM_COLORS[team] || '#aaa') : '';
 
-    const toggles = fields.map(f => {
-      const active = getWeekScore(c, f);
-      const neg = negFields.includes(f);
+    const tribe = tribeOf(c);
+    const tribeColor = tribeColorFor(tribe);
+
+    const toggles = state.scoringRules.map(rule => {
+      const active = getWeekScore(c, rule.key);
+      const neg = rule.points < 0;
       const disabled = prevElim ? 'disabled style="opacity:0.2;cursor:not-allowed;"' : '';
-      return `<td><button class="score-toggle${active?' active':''}${neg?' negative':''}" 
+      return `<td><button class="score-toggle${active?' active':''}${neg?' negative':''}"
         ${disabled}
-        onclick="toggle('${c.replace(/'/g,"\\'")}','${f}')">${active ? '✓' : ''}</button></td>`;
+        onclick="toggle('${c.replace(/'/g,"\\'")}','${rule.key}')">${active ? '✓' : ''}</button></td>`;
     }).join('');
 
     // Insert the new custom button <td> right after ${toggles} and before the Row Score
@@ -1270,6 +1378,7 @@ function renderScoring() {
         ${thisWeekElim ? '<span class="eliminated-badge">VOTED OUT</span>' : ''}
       </td>
       <td>${team ? `<span class="team-badge" style="background:${color}22;border:1px solid ${color}66;color:${color};">${team.split(' ')[0]}</span>` : '<span style="color:rgba(255,255,255,0.2);font-size:0.7rem;">—</span>'}</td>
+      <td><span class="team-badge" style="cursor:pointer;background:${tribeColor}22;border:1px solid ${tribeColor}66;color:${tribeColor};" onclick="assignTribe('${c.replace(/'/g,"\\'")}')" title="Click to assign/reassign tribe">${tribe || '— set —'}</span></td>
       ${toggles}
       <td>
         <button class="score-toggle ${customPts !== 0 ? 'active' : ''} ${customPts < 0 ? 'negative' : ''}" 
@@ -1421,6 +1530,7 @@ async function startNewSeason() {
     archivedAt: Date.now(),
     castaways: state.castaways,
     assignments: state.assignments,
+    assignedWeek: state.assignedWeek,
     eliminated: state.eliminated,
     weekScores: state.weekScores,
     finalWeek: state.currentWeek
@@ -1428,15 +1538,102 @@ async function startNewSeason() {
 
   state.castaways = names;
   state.assignments = {};
+  state.assignedWeek = {};
   state.eliminated = {};
   state.weekScores = {};
   state.currentWeek = 1;
   state.seasonLabel = label;
+  // Tribes are a fresh-per-season concept (new cast, new tribe names) — unlike scoringRules,
+  // which is a league-wide setting that should persist across seasons.
+  state.tribes = [];
+  state.tribeAssignments = {};
 
   await save();
   closeNewSeasonModal();
   renderDraft();
   renderStandings();
+}
+
+// SCORING RULES
+function slugify(label) {
+  return label.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'rule';
+}
+
+function uniqueRuleKey(label) {
+  const base = slugify(label);
+  const existing = new Set(state.scoringRules.map(r => r.key));
+  let key = base;
+  let n = 2;
+  while (existing.has(key)) {
+    key = `${base}_${n}`;
+    n++;
+  }
+  return key;
+}
+
+function renderRules() {
+  const list = document.getElementById('scoring-rules-list');
+  if (!list) return;
+  list.innerHTML = state.scoringRules.map(rule => {
+    const isProtected = PROTECTED_RULE_KEYS.includes(rule.key);
+    return `<div class="rule-row">
+      <span>${rule.emoji ? rule.emoji + ' ' : ''}${rule.label}</span>
+      <span style="display:flex; align-items:center; gap:0.6rem;">
+        <span class="rule-pts ${rule.points < 0 ? 'neg' : 'pos'}">${rule.points > 0 ? '+' : ''}${rule.points} pt${Math.abs(rule.points) === 1 ? '' : 's'}</span>
+        <button class="remove-btn" style="color:var(--gold);" onclick="editScoringRule('${rule.key}')" title="Edit">✎</button>
+        <button class="remove-btn" ${isProtected ? 'disabled style="opacity:0.2;cursor:not-allowed;"' : ''} onclick="deleteScoringRule('${rule.key}')" title="${isProtected ? 'Required for elimination tracking' : 'Delete'}">✕</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+async function addScoringRule() {
+  if (!requireAuth()) return;
+  const label = prompt('New scoring event name (e.g. "Won Firemaking"):');
+  if (!label || !label.trim()) return;
+  const emoji = prompt('Emoji for this event (optional):', '⭐') || '';
+  const ptsInput = prompt('Point value (use a negative number for a penalty):', '1');
+  if (ptsInput === null) return;
+  const points = parseInt(ptsInput, 10);
+  if (isNaN(points)) { alert('Please enter a valid number.'); return; }
+
+  state.scoringRules.push({ key: uniqueRuleKey(label.trim()), emoji: emoji.trim(), label: label.trim(), points });
+  await save();
+  renderRules();
+  renderScoring();
+}
+
+async function editScoringRule(key) {
+  if (!requireAuth()) return;
+  const rule = state.scoringRules.find(r => r.key === key);
+  if (!rule) return;
+  const label = prompt('Event name:', rule.label);
+  if (label === null) return;
+  const emoji = prompt('Emoji (optional):', rule.emoji || '');
+  if (emoji === null) return;
+  const ptsInput = prompt('Point value (use a negative number for a penalty):', rule.points);
+  if (ptsInput === null) return;
+  const points = parseInt(ptsInput, 10);
+  if (isNaN(points)) { alert('Please enter a valid number.'); return; }
+
+  rule.label = label.trim() || rule.label;
+  rule.emoji = emoji.trim();
+  rule.points = points;
+  await save();
+  renderRules();
+  renderScoring();
+}
+
+async function deleteScoringRule(key) {
+  if (!requireAuth()) return;
+  if (PROTECTED_RULE_KEYS.includes(key)) return;
+  const rule = state.scoringRules.find(r => r.key === key);
+  if (!rule) return;
+  if (!confirm(`Delete the "${rule.label}" scoring event? Past scores using it will no longer count.`)) return;
+  state.scoringRules = state.scoringRules.filter(r => r.key !== key);
+  await save();
+  renderRules();
+  renderScoring();
 }
 
 async function setCustomPoints(castaway) {
@@ -1488,6 +1685,13 @@ window.viewArchivedSeason = viewArchivedSeason;
 window.openNewSeasonModal = openNewSeasonModal;
 window.closeNewSeasonModal = closeNewSeasonModal;
 window.startNewSeason = startNewSeason;
+window.addTribe = addTribe;
+window.renameTribe = renameTribe;
+window.deleteTribe = deleteTribe;
+window.assignTribe = assignTribe;
+window.addScoringRule = addScoringRule;
+window.editScoringRule = editScoringRule;
+window.deleteScoringRule = deleteScoringRule;
 
 // Boot
 init();
